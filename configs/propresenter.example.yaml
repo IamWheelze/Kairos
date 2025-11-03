@@ -1,0 +1,15 @@
+presentation:
+  client: http
+  http:
+    base_url: http://propresenter.local:50001/
+    timeout: 2.0
+    headers: {}
+    # Map Kairos commands to your gateway/server endpoints
+    routes:
+      start: /api/presentation/start
+      stop: /api/presentation/stop
+      next_slide: /api/presentation/next
+      previous_slide: /api/presentation/prev
+      current_slide: /api/presentation/current
+      set_slide: /api/presentation/set
+      list_presentations: /api/presentation/list

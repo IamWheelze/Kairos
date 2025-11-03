@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>HITL Dashboard</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 16px; }
+      #log { border: 1px solid #ccc; padding: 8px; height: 60vh; overflow: auto; }
+      .line { margin: 0; padding: 2px 0; border-bottom: 1px dotted #eee; }
+      .ok { color: #0a0; }
+      .warn { color: #c80; }
+      .err { color: #b00; }
+    </style>
+  </head>
+  <body>
+    <h2>HITL Dashboard</h2>
+    <div>
+      <strong>ProPresenter:</strong> <span id="pp-status">checking…</span>
+      <button id="refresh-status">Refresh</button>
+      <span style="margin-left:16px"><strong>NLU:</strong> <span id="nlu-provider">…</span></span>
+      <span style="margin-left:16px"><strong>AI:</strong> <span id="ai-state">…</span> <button id="ai-toggle">Toggle</button></span>
+    </div>
+    <div id="log"></div>
+    <h3>Pending</h3>
+    <div id="pending"></div>
+    <h3>Test Intent</h3>
+    <form id="test-form">
+      <label>Intent
+        <select name="name">
+          <option>NextSlide</option>
+          <option>PreviousSlide</option>
+          <option>ClearScreen</option>
+          <option>GoToSong</option>
+        </select>
+      </label>
+      <label>Song Title (for GoToSong)
+        <input type="text" name="song_title" />
+      </label>
+      <label>Confidence
+        <input type="number" name="confidence" min="0" max="1" step="0.05" value="0.6" />
+      </label>
+      <button type="submit">Send</button>
+    </form>
+    <div style="margin-top:8px;">
+      <button id="btn-next">Next</button>
+      <button id="btn-prev">Previous</button>
+      <button id="btn-clear">Clear</button>
+    </div>
+    <h3>NLU From Text</h3>
+    <form id="nlu-form">
+      <input type="text" name="text" placeholder="e.g. show amazing grace" style="width: 400px;" />
+      <button type="submit">Detect & Execute</button>
+    </form>
+    <h3>Voice Command (Record → STT)</h3>
+    <div>
+      <button id="rec-start">Start</button>
+      <button id="rec-stop" disabled>Stop</button>
+    </div>
+    <h3>Simulate Music ID</h3>
+    <form id="music-form">
+      <input type="text" name="title" placeholder="Song title" />
+      <input type="number" name="confidence" min="0" max="1" step="0.05" value="0.9" />
+      <button type="submit">Trigger</button>
+    </form>
+    <h3>Identify From Audio (ACRCloud)</h3>
+    <form id="music-audio-form">
+      <input type="file" name="file" accept="audio/*" />
+      <button type="submit">Upload & Identify</button>
+    </form>
+    <script>
+      const log = document.getElementById('log');
+      const pending = document.getElementById('pending');
+      const pp = document.getElementById('pp-status');
+      const refreshBtn = document.getElementById('refresh-status');
+      function addLine(text, cls='') {
+        const p = document.createElement('p');
+        p.className = 'line ' + cls;
+        p.textContent = new Date().toISOString() + '  ' + text;
+        log.appendChild(p);
+        log.scrollTop = log.scrollHeight;
+      }
+      async function fetchProvider(){
+        try{
+          const r = await fetch('/api/nlu/provider');
+          const j = await r.json();
+          document.getElementById('nlu-provider').textContent = j.provider;
+        }catch(e){ document.getElementById('nlu-provider').textContent = 'error'; }
+      }
+      function setStatus(s) {
+        pp.textContent = s.connected ? 'Connected' : ('Disconnected' + (s.last_error ? ' ('+s.last_error+')' : ''));
+        pp.className = s.connected ? 'ok' : 'warn';
+      }
+      async function refreshStatus() {
+        try {
+          const r = await fetch('/api/propresenter/status');
+          setStatus(await r.json());
+        } catch (e) { pp.textContent = 'error'; }
+      }
+      const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const ws = new WebSocket(proto + '//' + location.host + '/ws/hitl');
+      ws.onopen = () => addLine('Connected to HITL stream', 'ok');
+      ws.onmessage = (ev) => {
+        try {
+          const data = JSON.parse(ev.data);
+          if (data.type === 'pp_status') {
+            setStatus(data);
+            return;
+          }
+          if (data.type === 'pending') {
+            const row = document.createElement('div');
+            row.textContent = `Pending ${data.intent}${data.detail ? ': ' + data.detail : ''}`;
+            const b1 = document.createElement('button');
+            b1.textContent = 'Confirm';
+            b1.onclick = () => ws.send(JSON.stringify({type:'confirm', id: data.id}));
+            const b2 = document.createElement('button');
+            b2.textContent = 'Cancel';
+            b2.onclick = () => ws.send(JSON.stringify({type:'cancel', id: data.id}));
+            row.appendChild(b1);
+            row.appendChild(b2);
+            pending.appendChild(row);
+          } else if (data.type) {
+            addLine(`[${data.type}] ` + (data.msg || ''));
+          } else {
+            addLine(ev.data);
+          }
+        } catch (e) {
+          addLine(ev.data);
+        }
+      };
+      ws.onclose = () => addLine('Disconnected', 'warn');
+
+      refreshBtn.onclick = refreshStatus;
+      refreshStatus();
+      fetchProvider();
+
+      async function refreshAIState(){
+        const r = await fetch('/api/state');
+        const j = await r.json();
+        document.getElementById('ai-state').textContent = j.enabled ? 'Enabled' : 'Disabled';
+      }
+      const aiToggle = document.getElementById('ai-toggle');
+      aiToggle.onclick = async ()=>{
+        const cur = await (await fetch('/api/state')).json();
+        await fetch('/api/state', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({enabled: !cur.enabled})});
+        refreshAIState();
+      };
+      refreshAIState();
+
+      const form = document.getElementById('test-form');
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        const fd = new FormData(form);
+        const name = fd.get('name');
+        const confidence = parseFloat(fd.get('confidence') || '1');
+        const params = {};
+        if (name === 'GoToSong') params.song_title = fd.get('song_title');
+        const r = await fetch('/api/intent', {method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name, confidence, params})});
+        const j = await r.json();
+        addLine('Intent result: ' + JSON.stringify(j));
+      };
+
+      document.getElementById('btn-next').onclick = async ()=>{
+        const r = await fetch('/api/intent', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name:'NextSlide', params:{}, confidence:1})});
+        addLine('Manual Next: ' + await r.text());
+      };
+      document.getElementById('btn-prev').onclick = async ()=>{
+        const r = await fetch('/api/intent', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name:'PreviousSlide', params:{}, confidence:1})});
+        addLine('Manual Prev: ' + await r.text());
+      };
+      document.getElementById('btn-clear').onclick = async ()=>{
+        const r = await fetch('/api/intent', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name:'ClearScreen', params:{}, confidence:1})});
+        addLine('Manual Clear: ' + await r.text());
+      };
+
+      const nluForm = document.getElementById('nlu-form');
+      nluForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const fd = new FormData(nluForm);
+        const text = fd.get('text') || '';
+        const r = await fetch('/api/nlu/detect', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text})});
+        const j = await r.json();
+        addLine('NLU: ' + JSON.stringify(j.nlu));
+        if (j.executed) addLine('Executed: ' + j.executed);
+      };
+
+      const musicForm = document.getElementById('music-form');
+      musicForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const fd = new FormData(musicForm);
+        const title = fd.get('title') || '';
+        const confidence = parseFloat(fd.get('confidence') || '0');
+        const r = await fetch('/api/music/identify', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, confidence})});
+        const j = await r.json();
+        addLine('MusicID: ' + JSON.stringify(j));
+      };
+
+      const musicAudioForm = document.getElementById('music-audio-form');
+      musicAudioForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const file = musicAudioForm.querySelector('input[type=file]').files[0];
+        if (!file) { addLine('No audio selected', 'warn'); return; }
+        const buf = await file.arrayBuffer();
+        const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+        const r = await fetch('/api/music/identify', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({audio_base64: b64})});
+        const j = await r.json();
+        addLine('MusicID (audio): ' + JSON.stringify(j));
+      };
+
+      // MediaRecorder for STT recognize
+      let mediaRecorder = null;
+      let chunks = [];
+      const recStart = document.getElementById('rec-start');
+      const recStop = document.getElementById('rec-stop');
+      recStart.onclick = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+          mediaRecorder = new MediaRecorder(stream, {mimeType: 'audio/webm'});
+          chunks = [];
+          mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+          mediaRecorder.onstop = async () => {
+            const blob = new Blob(chunks, {type: 'audio/webm'});
+            const buf = await blob.arrayBuffer();
+            const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+            const r = await fetch('/api/stt/recognize', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({audio_base64: b64, mime: 'audio/webm'})});
+            const j = await r.json();
+            addLine('STT: ' + (j.text || '(no text)'));
+            if (j.nlu) addLine('NLU: ' + JSON.stringify(j.nlu));
+            if (j.executed) addLine('Executed: ' + j.executed);
+          };
+          mediaRecorder.start();
+          recStart.disabled = true;
+          recStop.disabled = false;
+          addLine('Recording…');
+        } catch (e) {
+          addLine('Mic error: ' + e, 'err');
+        }
+      };
+      recStop.onclick = () => {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+          recStart.disabled = false;
+          recStop.disabled = true;
+        }
+      };
+    </script>
+  </body>
+  </html>

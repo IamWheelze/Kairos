@@ -1,0 +1,20 @@
+# Configuration settings for Experiment 001
+experiment:
+  name: "Voice-Activated Presentation System"
+  description: "Initial experiment for testing the voice-activated presentation system."
+  version: 1.0
+  parameters:
+    audio_sample_rate: 16000
+    audio_duration: 5
+    asr_model: "base_model"
+    nlp_model: "intent_model"
+    training_epochs: 50
+    batch_size: 32
+    learning_rate: 0.001
+    data_split:
+      train: 0.8
+      validation: 0.1
+      test: 0.1
+  output:
+    model_checkpoint: "models/checkpoints/exp_001_model.pth"
+    logs: "logs/exp_001.log"

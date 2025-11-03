@@ -1,0 +1,28 @@
+production:
+  environment: production
+  logging:
+    level: INFO
+    file: logs/production.log
+  database:
+    host: production-db-host
+    port: 5432
+    user: production_user
+    password: production_password
+    name: kairos_production
+  api:
+    endpoint: https://api.kairos.com
+    timeout: 30
+  features:
+    enable_voice_activation: true
+    enable_real_time_processing: true
+  model:
+    path: models/exported/best_model.h5
+    version: 1.0.0
+  audio:
+    sample_rate: 16000
+    channels: 1
+  presentation:
+    control_api:
+      host: presenter-api-host
+      port: 8080
+      timeout: 10

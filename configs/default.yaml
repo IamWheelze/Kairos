@@ -1,0 +1,21 @@
+audio:
+  filename: output.wav
+  channels: 1
+  rate: 44100
+  chunk: 1024
+asr:
+  model_name: baseline
+presentation:
+  client: stub  # options: stub, http
+  http:
+    base_url: http://127.0.0.1:50001/
+    timeout: 2.0
+    headers: {}
+    routes:
+      start: /start
+      stop: /stop
+      next_slide: /next
+      previous_slide: /prev
+      current_slide: /current
+      set_slide: /set
+      list_presentations: /presentations
