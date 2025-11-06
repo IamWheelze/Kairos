@@ -25,24 +25,41 @@ cd Kairos
 git checkout claude/check-frd-status-011CUrcw9xEPUJapwgPRDxB4
 ```
 
-### Step 5: Install Dependencies
+### Step 5: Check Your Python Version
 
-**Option A: Quick Install (Recommended)**
+First, check your Python version:
+```cmd
+python --version
+```
+
+### Step 6: Install Dependencies
+
+**If you have Python 3.8 or higher:**
 ```cmd
 pip install -r requirements.txt
 ```
 
-**Option B: Full Installation (Better for development)**
+**If you have Python 3.7:**
+Use the minimal Web UI requirements instead:
+```cmd
+pip install -r requirements-webui.txt
+```
+
+**Alternative: Full Installation (Better for development, requires Python 3.8+)**
 ```cmd
 pip install -e .
 ```
 
-If pip is not recognized, try:
+**If pip is not recognized, try:**
 ```cmd
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-webui.txt
 ```
 
-### Step 6: Launch Web UI
+**Recommended: Upgrade to Python 3.8+**
+Download from: https://www.python.org/downloads/
+(Make sure to check "Add Python to PATH" during installation)
+
+### Step 7: Launch Web UI
 
 **Windows Users - Double-click:**
 ```
@@ -59,12 +76,32 @@ python run_web_ui.py
 kairos-web
 ```
 
-### Step 7: Open Browser
+### Step 8: Open Browser
 Navigate to: http://localhost:8000
 
 ---
 
 ## Troubleshooting:
+
+### Python Version Errors (pandas, numpy, etc.)
+
+**Problem:** Error messages like "Could not find a version that satisfies the requirement pandas==1.3.3"
+
+**Cause:** You have Python 3.7 or lower, but the full requirements need Python 3.8+
+
+**Solution 1: Use Web UI minimal requirements (Recommended for Python 3.7)**
+```cmd
+pip install -r requirements-webui.txt
+```
+
+**Solution 2: Upgrade Python (Recommended)**
+1. Download Python 3.11 or 3.12 from https://www.python.org/downloads/
+2. During installation, check "Add Python to PATH"
+3. Restart your command prompt
+4. Run: `python --version` to verify
+5. Then: `pip install -r requirements.txt`
+
+**Solution 3: Use Python version manager (pyenv for advanced users)**
 
 ### "ModuleNotFoundError: No module named 'kairos'"
 **Solution 1: Use the updated script (already fixed)**

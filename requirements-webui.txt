@@ -1,0 +1,21 @@
+# Minimal requirements for Kairos Web UI
+# Works with Python 3.7+
+
+# Web UI dependencies (core requirements)
+fastapi==0.103.2
+uvicorn[standard]==0.22.0
+jinja2==3.1.4
+python-multipart==0.0.6
+websockets==11.0.3
+
+# Speech recognition (required for ASR functionality)
+SpeechRecognition==3.8.1
+
+# Configuration
+PyYAML==5.4.1
+
+# Optional: Uncomment if you need these features
+# numpy>=1.19.0
+# pandas>=1.1.0
+# torch>=1.9.0
+# transformers>=4.11.0
