@@ -637,7 +637,8 @@ body {
 }
 
 .form-group select,
-.form-group input[type="text"] {
+.form-group input[type="text"],
+.form-group input[type="password"] {
     width: 100%;
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid var(--border-color);
@@ -648,9 +649,44 @@ body {
 }
 
 .form-group select:focus,
-.form-group input[type="text"]:focus {
+.form-group input[type="text"]:focus,
+.form-group input[type="password"]:focus {
     outline: none;
     border-color: var(--primary-color);
+}
+
+.form-hint {
+    display: block;
+    margin-top: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.form-hint a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.form-hint a:hover {
+    text-decoration: underline;
+}
+
+.provider-info {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(74, 144, 226, 0.1);
+    border-radius: 8px;
+    border-left: 3px solid var(--primary-color);
+    font-size: 0.9rem;
+}
+
+.provider-info strong {
+    color: var(--text-primary);
+}
+
+.provider-info span {
+    color: var(--text-secondary);
 }
 
 .settings-actions {

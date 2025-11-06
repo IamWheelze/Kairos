@@ -42,6 +42,10 @@ setup(
             "black",
             "flake8",
         ],
+        "ai": [
+            "openai>=1.0.0",  # OpenAI GPT-3.5/GPT-4o support
+            "requests>=2.28.0",  # Ollama local AI support
+        ],
     },
     entry_points={
         "console_scripts": [

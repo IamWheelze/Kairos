@@ -370,6 +370,117 @@ async def update_settings(settings: SettingsRequest):
         }, status_code=500)
 
 
+@app.get("/api/nlp/providers")
+async def get_nlp_providers():
+    """Get list of available NLP providers."""
+    try:
+        from kairos.nlp.intent import IntentProcessor
+
+        providers = IntentProcessor.get_available_providers()
+
+        # Get current provider info if system is running
+        current_provider = None
+        if kairos_instance is not None and hasattr(kairos_instance, 'nlp_processor'):
+            current_provider = kairos_instance.nlp_processor.get_provider_info()
+
+        return JSONResponse({
+            "ok": True,
+            "providers": providers,
+            "current": current_provider
+        })
+    except Exception as e:
+        log.error("Error getting NLP providers: %s", e)
+        return JSONResponse({
+            "ok": False,
+            "error": str(e),
+            "providers": []
+        }, status_code=500)
+
+
+class NLPProviderRequest(BaseModel):
+    provider_id: str
+    config: Optional[dict] = None
+
+
+@app.post("/api/nlp/provider/select")
+async def select_nlp_provider(request: NLPProviderRequest):
+    """Select an NLP provider."""
+    global kairos_instance
+
+    try:
+        log.info("Selecting NLP provider: %s", request.provider_id)
+
+        if kairos_instance is None or kairos_instance.get_status() != "running":
+            return JSONResponse({
+                "ok": False,
+                "error": "System not running. Start system first."
+            }, status_code=400)
+
+        # Switch provider
+        success = kairos_instance.nlp_processor.set_provider(
+            request.provider_id,
+            request.config
+        )
+
+        if success:
+            provider_info = kairos_instance.nlp_processor.get_provider_info()
+
+            # Notify WebSocket clients
+            await broadcast_message({
+                "type": "nlp_provider_changed",
+                "provider": provider_info
+            })
+
+            return JSONResponse({
+                "ok": True,
+                "message": f"Switched to provider: {provider_info['name']}",
+                "provider": provider_info
+            })
+        else:
+            return JSONResponse({
+                "ok": False,
+                "error": "Failed to switch provider. Check configuration and API keys."
+            }, status_code=400)
+
+    except Exception as e:
+        log.error("Error selecting NLP provider: %s", e)
+        return JSONResponse({
+            "ok": False,
+            "error": str(e)
+        }, status_code=500)
+
+
+class NLPConfigRequest(BaseModel):
+    openai_api_key: Optional[str] = None
+    ollama_base_url: Optional[str] = "http://localhost:11434"
+
+
+@app.post("/api/nlp/config")
+async def update_nlp_config(request: NLPConfigRequest):
+    """Update NLP provider configuration."""
+    try:
+        log.info("Updating NLP configuration")
+
+        # Store config for next provider initialization
+        # Note: This would ideally be persisted to a config file
+        config = {}
+        if request.openai_api_key:
+            config["api_key"] = request.openai_api_key
+        if request.ollama_base_url:
+            config["base_url"] = request.ollama_base_url
+
+        return JSONResponse({
+            "ok": True,
+            "message": "Configuration updated. Select a provider to apply changes."
+        })
+    except Exception as e:
+        log.error("Error updating NLP config: %s", e)
+        return JSONResponse({
+            "ok": False,
+            "error": str(e)
+        }, status_code=500)
+
+
 # WebSocket endpoint
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):

@@ -87,6 +87,11 @@ class KairosApp {
             const httpUrlGroup = document.getElementById('httpUrlGroup');
             httpUrlGroup.style.display = e.target.value === 'http' ? 'block' : 'none';
         });
+
+        // NLP Provider Settings
+        document.getElementById('nlpProvider').addEventListener('change', (e) => {
+            this.handleNLPProviderChange(e.target.value);
+        });
     }
 
     // WebSocket Connection
@@ -433,9 +438,18 @@ class KairosApp {
         if (settings.sampleRate) document.getElementById('sampleRate').value = settings.sampleRate;
         if (settings.apiClient) document.getElementById('apiClient').value = settings.apiClient;
         if (settings.apiUrl) document.getElementById('apiUrl').value = settings.apiUrl;
+        if (settings.nlpProvider) document.getElementById('nlpProvider').value = settings.nlpProvider;
+        if (settings.openaiKey) document.getElementById('openaiKey').value = settings.openaiKey;
+        if (settings.ollamaUrl) document.getElementById('ollamaUrl').value = settings.ollamaUrl;
 
-        // Trigger API client change event
+        // Trigger change events
         document.getElementById('apiClient').dispatchEvent(new Event('change'));
+        if (settings.nlpProvider) {
+            this.handleNLPProviderChange(settings.nlpProvider);
+        }
+
+        // Load available providers
+        this.loadNLPProviders();
     }
 
     async saveSettings() {
@@ -444,13 +458,22 @@ class KairosApp {
             language: document.getElementById('language').value,
             sampleRate: document.getElementById('sampleRate').value,
             apiClient: document.getElementById('apiClient').value,
-            apiUrl: document.getElementById('apiUrl').value
+            apiUrl: document.getElementById('apiUrl').value,
+            nlpProvider: document.getElementById('nlpProvider').value,
+            openaiKey: document.getElementById('openaiKey').value,
+            ollamaUrl: document.getElementById('ollamaUrl').value
         };
 
         localStorage.setItem('kairosSettings', JSON.stringify(settings));
 
         try {
             await this.apiCall('/api/settings/update', 'POST', settings);
+
+            // Switch NLP provider if system is running
+            if (this.systemRunning) {
+                await this.selectNLPProvider(settings.nlpProvider);
+            }
+
             this.showToast('Settings saved successfully', 'success');
         } catch (error) {
             this.showToast('Failed to save settings: ' + error.message, 'error');
@@ -464,7 +487,90 @@ class KairosApp {
         document.getElementById('sampleRate').value = '44100';
         document.getElementById('apiClient').value = 'stub';
         document.getElementById('apiUrl').value = '';
+        document.getElementById('nlpProvider').value = 'rule-based';
+        document.getElementById('openaiKey').value = '';
+        document.getElementById('ollamaUrl').value = 'http://localhost:11434';
+        this.handleNLPProviderChange('rule-based');
         this.showToast('Settings reset to default', 'success');
+    }
+
+    // NLP Provider Management
+    handleNLPProviderChange(providerId) {
+        const openaiKeyGroup = document.getElementById('openaiKeyGroup');
+        const ollamaUrlGroup = document.getElementById('ollamaUrlGroup');
+
+        // Show/hide relevant config fields
+        if (providerId.startsWith('openai-')) {
+            openaiKeyGroup.style.display = 'block';
+            ollamaUrlGroup.style.display = 'none';
+        } else if (providerId.startsWith('ollama-')) {
+            openaiKeyGroup.style.display = 'none';
+            ollamaUrlGroup.style.display = 'block';
+        } else {
+            openaiKeyGroup.style.display = 'none';
+            ollamaUrlGroup.style.display = 'none';
+        }
+    }
+
+    async loadNLPProviders() {
+        try {
+            const data = await this.apiCall('/api/nlp/providers');
+
+            if (data.ok && data.current) {
+                this.updateProviderInfo(data.current);
+            }
+        } catch (error) {
+            console.error('Failed to load NLP providers:', error);
+        }
+    }
+
+    async selectNLPProvider(providerId) {
+        try {
+            const config = {};
+
+            // Add provider-specific config
+            if (providerId.startsWith('openai-')) {
+                const apiKey = document.getElementById('openaiKey').value;
+                if (apiKey) {
+                    config.api_key = apiKey;
+                }
+            } else if (providerId.startsWith('ollama-')) {
+                const baseUrl = document.getElementById('ollamaUrl').value;
+                if (baseUrl) {
+                    config.base_url = baseUrl;
+                }
+            }
+
+            const data = await this.apiCall('/api/nlp/provider/select', 'POST', {
+                provider_id: providerId,
+                config: config
+            });
+
+            if (data.ok) {
+                this.updateProviderInfo(data.provider);
+                this.showToast(data.message, 'success');
+            } else {
+                this.showToast(data.error, 'error');
+            }
+        } catch (error) {
+            this.showToast('Failed to switch provider: ' + error.message, 'error');
+        }
+    }
+
+    updateProviderInfo(providerInfo) {
+        const providerInfoDiv = document.getElementById('providerInfo');
+        const currentProvider = document.getElementById('currentProvider');
+        const providerCost = document.getElementById('providerCost');
+
+        currentProvider.textContent = providerInfo.name;
+
+        if (providerInfo.cost_per_request === 0) {
+            providerCost.textContent = 'FREE';
+        } else {
+            providerCost.textContent = `$${providerInfo.cost_per_request.toFixed(4)}`;
+        }
+
+        providerInfoDiv.style.display = 'block';
     }
 
     // API Calls
