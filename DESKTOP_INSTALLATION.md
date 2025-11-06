@@ -26,8 +26,15 @@ git checkout claude/check-frd-status-011CUrcw9xEPUJapwgPRDxB4
 ```
 
 ### Step 5: Install Dependencies
+
+**Option A: Quick Install (Recommended)**
 ```cmd
 pip install -r requirements.txt
+```
+
+**Option B: Full Installation (Better for development)**
+```cmd
+pip install -e .
 ```
 
 If pip is not recognized, try:
@@ -36,8 +43,20 @@ python -m pip install -r requirements.txt
 ```
 
 ### Step 6: Launch Web UI
+
+**Windows Users - Double-click:**
+```
+run_web_ui.bat
+```
+
+**Or use Command Prompt:**
 ```cmd
 python run_web_ui.py
+```
+
+**Or if you did full installation:**
+```cmd
+kairos-web
 ```
 
 ### Step 7: Open Browser
@@ -46,6 +65,21 @@ Navigate to: http://localhost:8000
 ---
 
 ## Troubleshooting:
+
+### "ModuleNotFoundError: No module named 'kairos'"
+**Solution 1: Use the updated script (already fixed)**
+The run_web_ui.py script now automatically adds src to the path.
+
+**Solution 2: Install the package properly**
+```cmd
+pip install -e .
+```
+
+**Solution 3: Set PYTHONPATH manually**
+```cmd
+set PYTHONPATH=%CD%\src
+python run_web_ui.py
+```
 
 ### "git is not recognized"
 Install Git from: https://git-scm.com/download/win
@@ -59,6 +93,14 @@ Use: `python -m pip install -r requirements.txt`
 
 ### Port 8000 already in use
 Try a different port: `python run_web_ui.py --port 3000`
+
+### Dependencies installation fails
+Try installing dependencies one by one or use a virtual environment:
+```cmd
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+```
 
 ---
 

@@ -5,6 +5,14 @@ This script starts the FastAPI web server that provides a modern browser-based
 interface for controlling the Kairos voice-activated presentation system.
 """
 
+import sys
+import os
+from pathlib import Path
+
+# Add src directory to Python path
+src_path = Path(__file__).parent / "src"
+sys.path.insert(0, str(src_path))
+
 import argparse
 from kairos.web.server import run_server
 
