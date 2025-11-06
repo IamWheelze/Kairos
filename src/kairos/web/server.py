@@ -7,7 +7,7 @@ presentation system.
 import os
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -38,7 +38,7 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 kairos_instance: Optional[Kairos] = None
 
 # WebSocket connections
-active_connections: list[WebSocket] = []
+active_connections: List[WebSocket] = []
 
 
 # Request Models
