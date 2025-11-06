@@ -6,6 +6,7 @@ defaults and overrides via file paths or environment variables.
 
 import os
 import yaml
+from typing import Optional
 from kairos.logging import get_logger
 
 log = get_logger("kairos.config")
@@ -44,7 +45,7 @@ def _read_yaml(path: str) -> dict:
         return {}
 
 
-def load_config(path: str | None = None) -> dict:
+def load_config(path: Optional[str] = None) -> dict:
     """Load configuration from default and optional override path or env.
 
     Resolution order (last wins):

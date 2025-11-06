@@ -1,6 +1,7 @@
 # core.py
 
 import os
+from typing import Optional
 from kairos.config import load_config
 from kairos.logging import get_logger
 
@@ -38,7 +39,7 @@ class Kairos:
         # Build presentation client based on config
         pres_cfg = self.config.get("presentation", {})
         client_type = pres_cfg.get("client", "stub")
-        client: PresentationAPIClient | None = None
+        client: Optional[PresentationAPIClient] = None
         if client_type == "http":
             http_cfg = pres_cfg.get("http", {})
             client = HTTPPresentationClient(
@@ -217,7 +218,7 @@ class Kairos:
             if os.path.exists(temp_audio_path):
                 os.remove(temp_audio_path)
 
-    def start(self, config_path: str | None = None):
+    def start(self, config_path: Optional[str] = None):
         if not self._running:
             self.config = load_config(config_path)
             self.initialize_components()

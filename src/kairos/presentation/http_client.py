@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 from urllib import request, error
 from urllib.parse import urljoin
 from kairos.logging import get_logger
@@ -6,7 +7,7 @@ from .client_base import PresentationAPIClient
 
 
 class HTTPPresentationClient(PresentationAPIClient):
-    def __init__(self, base_url: str, routes: dict | None = None, headers: dict | None = None, timeout: float = 2.0):
+    def __init__(self, base_url: str, routes: Optional[dict] = None, headers: Optional[dict] = None, timeout: float = 2.0):
         self.base_url = base_url.rstrip("/") + "/"
         self.routes = routes or {}
         self.headers = headers or {"Content-Type": "application/json"}
