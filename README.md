@@ -52,14 +52,41 @@ pip install -r requirements.txt
 
 ## Usage
 
-### Basic Usage
-To run the application, use the command line interface:
+### Web UI (Recommended) 🌐
+
+The easiest way to use Kairos is through the modern web interface:
+
+1. Start the web server:
+```bash
+python run_web_ui.py
+```
+
+2. Open your browser and navigate to:
+```
+http://localhost:8000
+```
+
+3. Click **"Start System"** and begin using voice commands!
+
+**Features:**
+- 🎤 Voice recording with visual feedback
+- 📁 Drag-and-drop audio file processing
+- 🎯 Quick command buttons
+- 📊 Real-time transcription and intent display
+- ⚙️ Configuration panel
+- 📜 Command history
+
+See the [Web UI Guide](docs/web_ui_guide.md) for detailed usage instructions.
+
+### Command Line Interface
+
+To run the application via CLI:
 
 ```bash
 python src/kairos/cli.py --start
 ```
 
-### Process Voice Commands
+### Process Voice Commands (Python API)
 
 #### From Audio File
 ```python
@@ -113,6 +140,8 @@ This project is licensed under the MIT License. See the LICENSE file for more de
 ## Acknowledgments
 Special thanks to the contributors and the open-source community for their support and resources.
 
-## Requirements Docs
-- Functional Requirements Document: `docs/frd.md`
-- Requirements Traceability Matrix: `docs/requirements_traceability.md`
+## Documentation
+- **Web UI Guide**: `docs/web_ui_guide.md` - Complete guide to using the web interface
+- **Functional Requirements Document**: `docs/frd.md`
+- **Requirements Traceability Matrix**: `docs/requirements_traceability.md`
+- **Architecture**: `docs/architecture.md`

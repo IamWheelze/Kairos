@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kairos - Voice-Activated Presentation Control</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-microphone-alt"></i>
+                    <h1>Kairos</h1>
+                </div>
+                <div class="system-status">
+                    <span class="status-label">System:</span>
+                    <span id="systemStatus" class="status-badge status-stopped">Stopped</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Panel - Voice Control -->
+            <div class="panel voice-panel">
+                <div class="panel-header">
+                    <i class="fas fa-microphone"></i>
+                    <h2>Voice Control</h2>
+                </div>
+                <div class="panel-body">
+                    <!-- Voice Activation -->
+                    <div class="voice-activation">
+                        <button id="startStopBtn" class="btn btn-primary btn-large">
+                            <i class="fas fa-power-off"></i>
+                            <span>Start System</span>
+                        </button>
+                    </div>
+
+                    <!-- Voice Recording Controls -->
+                    <div class="recording-controls">
+                        <button id="recordBtn" class="btn btn-record" disabled>
+                            <i class="fas fa-microphone"></i>
+                            <span>Start Recording</span>
+                        </button>
+                        <div class="recording-duration">
+                            <label for="durationSlider">Duration: <span id="durationValue">5</span>s</label>
+                            <input type="range" id="durationSlider" min="1" max="10" value="5" step="1">
+                        </div>
+                    </div>
+
+                    <!-- Audio File Upload -->
+                    <div class="file-upload">
+                        <h3><i class="fas fa-file-audio"></i> Process Audio File</h3>
+                        <div class="upload-area" id="uploadArea">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Drag & drop audio file here or click to browse</p>
+                            <input type="file" id="audioFileInput" accept=".wav,.mp3,.m4a" hidden>
+                        </div>
+                        <button id="processFileBtn" class="btn btn-secondary" disabled>
+                            <i class="fas fa-play"></i>
+                            <span>Process File</span>
+                        </button>
+                    </div>
+
+                    <!-- Voice Visualizer -->
+                    <div class="visualizer-container">
+                        <div class="voice-visualizer" id="voiceVisualizer">
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                        </div>
+                        <p class="visualizer-label">Voice Activity</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Panel - Results & Transcription -->
+            <div class="panel results-panel">
+                <div class="panel-header">
+                    <i class="fas fa-comments"></i>
+                    <h2>Transcription & Results</h2>
+                </div>
+                <div class="panel-body">
+                    <!-- Transcription Display -->
+                    <div class="transcription-box">
+                        <h3>Latest Transcription</h3>
+                        <div id="transcriptionText" class="transcription-text">
+                            <span class="placeholder">No transcription yet. Start recording to see results.</span>
+                        </div>
+                    </div>
+
+                    <!-- Intent Recognition -->
+                    <div class="intent-box">
+                        <h3>Recognized Intent</h3>
+                        <div id="intentDisplay" class="intent-display">
+                            <div class="intent-item">
+                                <span class="intent-label">Intent:</span>
+                                <span id="intentName" class="intent-value">-</span>
+                            </div>
+                            <div class="intent-item">
+                                <span class="intent-label">Parameters:</span>
+                                <span id="intentParams" class="intent-value">-</span>
+                            </div>
+                            <div class="intent-item">
+                                <span class="intent-label">Status:</span>
+                                <span id="intentStatus" class="intent-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Command History -->
+                    <div class="history-box">
+                        <h3>
+                            <i class="fas fa-history"></i>
+                            Command History
+                            <button id="clearHistoryBtn" class="btn-icon" title="Clear history">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </h3>
+                        <div id="commandHistory" class="command-history">
+                            <p class="placeholder">No commands processed yet.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Presentation Control -->
+            <div class="panel control-panel">
+                <div class="panel-header">
+                    <i class="fas fa-desktop"></i>
+                    <h2>Presentation Control</h2>
+                </div>
+                <div class="panel-body">
+                    <!-- Quick Commands -->
+                    <div class="quick-commands">
+                        <h3>Quick Commands</h3>
+                        <div class="command-grid">
+                            <button class="quick-cmd-btn" data-command="next slide">
+                                <i class="fas fa-forward"></i>
+                                <span>Next Slide</span>
+                            </button>
+                            <button class="quick-cmd-btn" data-command="previous slide">
+                                <i class="fas fa-backward"></i>
+                                <span>Previous</span>
+                            </button>
+                            <button class="quick-cmd-btn" data-command="start presentation">
+                                <i class="fas fa-play"></i>
+                                <span>Start</span>
+                            </button>
+                            <button class="quick-cmd-btn" data-command="stop presentation">
+                                <i class="fas fa-stop"></i>
+                                <span>Stop</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Jump to Slide -->
+                    <div class="jump-slide">
+                        <h3>Jump to Slide</h3>
+                        <div class="slide-input-group">
+                            <input type="number" id="slideNumber" min="1" placeholder="Slide #">
+                            <button id="jumpSlideBtn" class="btn btn-secondary">
+                                <i class="fas fa-arrow-right"></i>
+                                Go
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Current Slide Info -->
+                    <div class="current-slide-info">
+                        <h3>Current Slide</h3>
+                        <div class="slide-display">
+                            <div class="slide-number-display" id="currentSlideNumber">-</div>
+                            <button id="refreshSlideBtn" class="btn-icon" title="Refresh">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Presentation List -->
+                    <div class="presentation-list">
+                        <h3>
+                            Presentations
+                            <button id="refreshPresentationsBtn" class="btn-icon" title="Refresh">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </h3>
+                        <div id="presentationsList" class="presentations-list">
+                            <p class="placeholder">No presentations loaded.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Panel (Collapsible) -->
+        <div class="settings-drawer" id="settingsDrawer">
+            <button class="settings-toggle" id="settingsToggle">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </button>
+            <div class="settings-content">
+                <h2><i class="fas fa-sliders-h"></i> Configuration</h2>
+
+                <!-- ASR Settings -->
+                <div class="settings-section">
+                    <h3>Speech Recognition</h3>
+                    <div class="form-group">
+                        <label for="asrEngine">ASR Engine:</label>
+                        <select id="asrEngine">
+                            <option value="google" selected>Google Speech Recognition</option>
+                            <option value="sphinx">CMU Sphinx (Offline)</option>
+                            <option value="whisper">OpenAI Whisper</option>
+                            <option value="google_cloud">Google Cloud Speech</option>
+                            <option value="wit">Wit.ai</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="language">Language:</label>
+                        <select id="language">
+                            <option value="en-US" selected>English (US)</option>
+                            <option value="en-GB">English (UK)</option>
+                            <option value="es-ES">Spanish</option>
+                            <option value="fr-FR">French</option>
+                            <option value="de-DE">German</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Audio Settings -->
+                <div class="settings-section">
+                    <h3>Audio</h3>
+                    <div class="form-group">
+                        <label for="sampleRate">Sample Rate:</label>
+                        <select id="sampleRate">
+                            <option value="16000">16 kHz</option>
+                            <option value="44100" selected>44.1 kHz</option>
+                            <option value="48000">48 kHz</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Presentation API Settings -->
+                <div class="settings-section">
+                    <h3>Presentation API</h3>
+                    <div class="form-group">
+                        <label for="apiClient">Client Type:</label>
+                        <select id="apiClient">
+                            <option value="stub" selected>Stub (Testing)</option>
+                            <option value="http">HTTP (ProPresenter)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="httpUrlGroup" style="display: none;">
+                        <label for="apiUrl">API URL:</label>
+                        <input type="text" id="apiUrl" placeholder="http://127.0.0.1:50001">
+                    </div>
+                </div>
+
+                <div class="settings-actions">
+                    <button id="saveSettingsBtn" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        Save Settings
+                    </button>
+                    <button id="resetSettingsBtn" class="btn btn-secondary">
+                        <i class="fas fa-undo"></i>
+                        Reset to Default
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>Processing...</p>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
