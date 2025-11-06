@@ -12,9 +12,12 @@ class Kairos:
         self.asr_model = None
         self.nlp_processor = None
         self.presentation_controller = None
+        self.bible_service = None
         self._running = False
         self.config = {}
         self.log = get_logger("kairos.core")
+        self.current_bible_verse = None  # Track current verse for next/previous
+        self.current_bible_translation = "KJV"  # Default translation
 
     def initialize_components(self):
         from kairos.audio.recorder import AudioRecorder
@@ -23,9 +26,11 @@ class Kairos:
         from kairos.presentation.controller import PresentationController
         from kairos.presentation.http_client import HTTPPresentationClient
         from kairos.presentation.client_base import PresentationAPIClient
+        from kairos.bible.service import BibleService
 
         audio_cfg = self.config.get("audio", {})
         asr_cfg = self.config.get("asr", {})
+        bible_cfg = self.config.get("bible", {})
 
         self.audio_recorder = AudioRecorder(
             filename=audio_cfg.get("filename", "output.wav"),
@@ -51,6 +56,13 @@ class Kairos:
 
         self.presentation_controller = PresentationController(api_client=client)
 
+        # Initialize Bible service
+        self.bible_service = BibleService(
+            api=bible_cfg.get("api", BibleService.BIBLE_API_COM),
+            default_translation=bible_cfg.get("translation", "KJV")
+        )
+        self.current_bible_translation = bible_cfg.get("translation", "KJV")
+
     def run(self):
         # Backwards-compatible entry point
         self.start()
@@ -63,10 +75,27 @@ class Kairos:
             command: Text command string
 
         Returns:
-            Result dictionary from presentation controller
+            Result dictionary from presentation controller or Bible service
         """
         self.log.info("Processing command: %s", command)
         intent_tuple = self.nlp_processor.recognize_intent(command)
+
+        if not intent_tuple:
+            return {"ok": False, "error": "No intent recognized"}
+
+        intent_name, params = intent_tuple
+
+        # Handle Bible-specific intents
+        if intent_name == "show_bible_verse":
+            return self.show_bible_verse(params.get("reference"))
+        elif intent_name == "set_bible_translation":
+            return self.set_bible_translation(params.get("translation"))
+        elif intent_name == "next_verse":
+            return self.next_bible_verse()
+        elif intent_name == "previous_verse":
+            return self.previous_bible_verse()
+
+        # Handle presentation intents
         return self.presentation_controller.execute_intent(intent_tuple)
 
     def process_audio_file(self, audio_file_path):
@@ -231,6 +260,136 @@ class Kairos:
 
     def get_status(self):
         return "running" if self._running else "stopped"
+
+    # Bible Command Handlers
+
+    def show_bible_verse(self, reference: str) -> dict:
+        """Fetch and display a Bible verse.
+
+        Args:
+            reference: Bible reference (e.g., "John 3:16")
+
+        Returns:
+            Dictionary with verse information
+        """
+        if not self.bible_service or not self.bible_service.is_available():
+            return {
+                "ok": False,
+                "error": "Bible service not available. Install 'requests' package."
+            }
+
+        if not reference:
+            return {
+                "ok": False,
+                "error": "No Bible reference provided"
+            }
+
+        self.log.info("Fetching Bible verse: %s (%s)", reference, self.current_bible_translation)
+
+        verse = self.bible_service.get_verse(reference, self.current_bible_translation)
+
+        if not verse:
+            return {
+                "ok": False,
+                "error": f"Could not find Bible verse: {reference}",
+                "reference": reference
+            }
+
+        # Store current verse for next/previous navigation
+        self.current_bible_verse = verse
+
+        return {
+            "ok": True,
+            "command": "show_bible_verse",
+            "reference": verse.reference,
+            "text": verse.text,
+            "translation": verse.translation,
+            "verse_data": verse.to_dict()
+        }
+
+    def set_bible_translation(self, translation: str) -> dict:
+        """Set the Bible translation.
+
+        Args:
+            translation: Translation abbreviation (e.g., "ESV", "NIV")
+
+        Returns:
+            Dictionary with success status
+        """
+        if not translation:
+            return {
+                "ok": False,
+                "error": "No translation specified"
+            }
+
+        translation = translation.upper()
+        self.current_bible_translation = translation
+        self.log.info("Bible translation set to: %s", translation)
+
+        return {
+            "ok": True,
+            "command": "set_bible_translation",
+            "translation": translation,
+            "message": f"Bible translation changed to {translation}"
+        }
+
+    def next_bible_verse(self) -> dict:
+        """Show the next Bible verse.
+
+        Returns:
+            Dictionary with verse information
+        """
+        if not self.current_bible_verse:
+            return {
+                "ok": False,
+                "error": "No current verse. Please show a verse first."
+            }
+
+        # Parse current reference and increment
+        parsed = self.bible_service.parse_reference(self.current_bible_verse.reference)
+        if not parsed:
+            return {
+                "ok": False,
+                "error": "Cannot parse current reference"
+            }
+
+        book, chapter, verse, end_verse = parsed
+        next_verse = (end_verse or verse) + 1
+        next_reference = f"{book} {chapter}:{next_verse}"
+
+        return self.show_bible_verse(next_reference)
+
+    def previous_bible_verse(self) -> dict:
+        """Show the previous Bible verse.
+
+        Returns:
+            Dictionary with verse information
+        """
+        if not self.current_bible_verse:
+            return {
+                "ok": False,
+                "error": "No current verse. Please show a verse first."
+            }
+
+        # Parse current reference and decrement
+        parsed = self.bible_service.parse_reference(self.current_bible_verse.reference)
+        if not parsed:
+            return {
+                "ok": False,
+                "error": "Cannot parse current reference"
+            }
+
+        book, chapter, verse, _ = parsed
+        if verse <= 1:
+            return {
+                "ok": False,
+                "error": "Already at first verse of chapter"
+            }
+
+        prev_verse = verse - 1
+        prev_reference = f"{book} {chapter}:{prev_verse}"
+
+        return self.show_bible_verse(prev_reference)
 
 if __name__ == "__main__":
     kairos_system = Kairos()

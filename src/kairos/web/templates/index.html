@@ -195,6 +195,52 @@
                             <p class="placeholder">No presentations loaded.</p>
                         </div>
                     </div>
+
+                    <!-- Bible Verse Display -->
+                    <div class="bible-section">
+                        <h3>
+                            <i class="fas fa-book"></i>
+                            Bible Verses
+                        </h3>
+
+                        <!-- Bible Verse Input -->
+                        <div class="bible-input-group">
+                            <input type="text" id="bibleReference" placeholder="John 3:16">
+                            <button id="showVerseBtn" class="btn btn-secondary">
+                                <i class="fas fa-search"></i>
+                                Show
+                            </button>
+                        </div>
+
+                        <!-- Bible Translation Selector -->
+                        <div class="bible-translation">
+                            <label for="bibleTranslation">Translation:</label>
+                            <select id="bibleTranslation">
+                                <option value="KJV" selected>KJV</option>
+                                <option value="ESV">ESV</option>
+                                <option value="NIV">NIV</option>
+                                <option value="WEB">WEB</option>
+                            </select>
+                        </div>
+
+                        <!-- Bible Verse Display -->
+                        <div class="bible-verse-display" id="bibleVerseDisplay" style="display: none;">
+                            <div class="bible-reference" id="bibleVerseReference">-</div>
+                            <div class="bible-text" id="bibleVerseText">-</div>
+
+                            <!-- Navigation Buttons -->
+                            <div class="bible-nav-buttons">
+                                <button id="prevVerseBtn" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-chevron-left"></i>
+                                    Previous
+                                </button>
+                                <button id="nextVerseBtn" class="btn btn-secondary btn-sm">
+                                    Next
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

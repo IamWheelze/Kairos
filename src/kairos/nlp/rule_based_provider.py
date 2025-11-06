@@ -80,6 +80,34 @@ class RuleBasedProvider(NLPProvider):
                 except ValueError:
                     continue
 
+        # Bible verse lookup
+        # Pattern: "show john 3:16" or "display genesis 1:1-3" or "go to matthew 5:3"
+        bible_patterns = [
+            r"(?:show|display|go\s+to|open|read)\s+(\d?\s*[a-z]+\s+\d+:\d+(?:-\d+)?)",
+            r"(?:bible\s+verse\s+)?(\d?\s*[a-z]+\s+\d+:\d+(?:-\d+)?)",
+        ]
+
+        for pattern in bible_patterns:
+            match = re.search(pattern, text)
+            if match:
+                reference = match.group(1).strip()
+                self.log.debug("Parsed Bible reference: %s", reference)
+                return ("show_bible_verse", {"reference": reference})
+
+        # Bible translation selection
+        if "translation" in text or "version" in text:
+            # Extract translation abbreviation (ESV, NIV, KJV, etc.)
+            translation_match = re.search(r"\b(kjv|esv|niv|nlt|nasb|nkjv|web)\b", text)
+            if translation_match:
+                translation = translation_match.group(1).upper()
+                return ("set_bible_translation", {"translation": translation})
+
+        # Next/previous verse
+        if "next" in text and "verse" in text:
+            return ("next_verse", {})
+        if ("previous" in text or "last" in text) and "verse" in text:
+            return ("previous_verse", {})
+
         return None
 
     def get_provider_name(self) -> str:

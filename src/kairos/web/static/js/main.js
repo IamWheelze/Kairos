@@ -92,6 +92,17 @@ class KairosApp {
         document.getElementById('nlpProvider').addEventListener('change', (e) => {
             this.handleNLPProviderChange(e.target.value);
         });
+
+        // Bible Controls
+        document.getElementById('showVerseBtn').addEventListener('click', () => this.showBibleVerse());
+        document.getElementById('bibleReference').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') this.showBibleVerse();
+        });
+        document.getElementById('bibleTranslation').addEventListener('change', (e) => {
+            this.setBibleTranslation(e.target.value);
+        });
+        document.getElementById('nextVerseBtn').addEventListener('click', () => this.nextBibleVerse());
+        document.getElementById('prevVerseBtn').addEventListener('click', () => this.previousBibleVerse());
     }
 
     // WebSocket Connection
@@ -623,6 +634,90 @@ class KairosApp {
 
     showLoading(show) {
         document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+    }
+
+    // Bible Methods
+    async showBibleVerse() {
+        const reference = document.getElementById('bibleReference').value.trim();
+
+        if (!reference) {
+            this.showToast('Please enter a Bible reference (e.g., John 3:16)', 'warning');
+            return;
+        }
+
+        try {
+            const data = await this.apiCall('/api/bible/verse', 'POST', {
+                reference: reference,
+                translation: document.getElementById('bibleTranslation').value
+            });
+
+            if (data.ok) {
+                this.displayBibleVerse(data);
+                this.showToast('Bible verse loaded', 'success');
+            } else {
+                this.showToast(data.error || 'Failed to load verse', 'error');
+            }
+        } catch (error) {
+            this.showToast('Error loading Bible verse: ' + error.message, 'error');
+        }
+    }
+
+    async setBibleTranslation(translation) {
+        try {
+            const data = await this.apiCall('/api/bible/translation', 'POST', {
+                translation: translation
+            });
+
+            if (data.ok) {
+                this.showToast(`Translation changed to ${translation}`, 'success');
+            }
+        } catch (error) {
+            this.showToast('Error changing translation: ' + error.message, 'error');
+        }
+    }
+
+    async nextBibleVerse() {
+        try {
+            const data = await this.apiCall('/api/bible/next', 'POST');
+
+            if (data.ok) {
+                this.displayBibleVerse(data);
+                this.showToast('Next verse loaded', 'success');
+            } else {
+                this.showToast(data.error || 'No next verse available', 'warning');
+            }
+        } catch (error) {
+            this.showToast('Error loading next verse: ' + error.message, 'error');
+        }
+    }
+
+    async previousBibleVerse() {
+        try {
+            const data = await this.apiCall('/api/bible/previous', 'POST');
+
+            if (data.ok) {
+                this.displayBibleVerse(data);
+                this.showToast('Previous verse loaded', 'success');
+            } else {
+                this.showToast(data.error || 'No previous verse available', 'warning');
+            }
+        } catch (error) {
+            this.showToast('Error loading previous verse: ' + error.message, 'error');
+        }
+    }
+
+    displayBibleVerse(data) {
+        const display = document.getElementById('bibleVerseDisplay');
+        const reference = document.getElementById('bibleVerseReference');
+        const text = document.getElementById('bibleVerseText');
+
+        reference.textContent = `${data.reference} (${data.translation})`;
+        text.textContent = data.text;
+
+        display.style.display = 'block';
+
+        // Update the reference input to current verse
+        document.getElementById('bibleReference').value = data.reference;
     }
 
     formatTime(date) {

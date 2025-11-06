@@ -481,6 +481,172 @@ async def update_nlp_config(request: NLPConfigRequest):
         }, status_code=500)
 
 
+# Bible API Endpoints
+
+class BibleVerseRequest(BaseModel):
+    reference: str
+    translation: Optional[str] = None
+
+
+@app.post("/api/bible/verse")
+async def get_bible_verse(request: BibleVerseRequest):
+    """Fetch a Bible verse."""
+    global kairos_instance
+
+    if kairos_instance is None or kairos_instance.get_status() != "running":
+        return JSONResponse({
+            "ok": False,
+            "error": "System not running"
+        }, status_code=400)
+
+    try:
+        result = kairos_instance.show_bible_verse(request.reference)
+
+        # Broadcast to WebSocket clients
+        if result.get("ok"):
+            await broadcast_message({
+                "type": "bible_verse",
+                "reference": result.get("reference"),
+                "text": result.get("text"),
+                "translation": result.get("translation")
+            })
+
+        return JSONResponse(result)
+    except Exception as e:
+        log.error("Error fetching Bible verse: %s", e)
+        return JSONResponse({
+            "ok": False,
+            "error": str(e)
+        }, status_code=500)
+
+
+class BibleTranslationRequest(BaseModel):
+    translation: str
+
+
+@app.post("/api/bible/translation")
+async def set_bible_translation(request: BibleTranslationRequest):
+    """Set Bible translation."""
+    global kairos_instance
+
+    if kairos_instance is None or kairos_instance.get_status() != "running":
+        return JSONResponse({
+            "ok": False,
+            "error": "System not running"
+        }, status_code=400)
+
+    try:
+        result = kairos_instance.set_bible_translation(request.translation)
+        return JSONResponse(result)
+    except Exception as e:
+        log.error("Error setting Bible translation: %s", e)
+        return JSONResponse({
+            "ok": False,
+            "error": str(e)
+        }, status_code=500)
+
+
+@app.get("/api/bible/translations")
+async def get_bible_translations():
+    """Get list of supported Bible translations."""
+    global kairos_instance
+
+    if kairos_instance is None or kairos_instance.get_status() != "running":
+        return JSONResponse({
+            "ok": False,
+            "error": "System not running",
+            "translations": []
+        }, status_code=400)
+
+    try:
+        if hasattr(kairos_instance, 'bible_service') and kairos_instance.bible_service:
+            translations = kairos_instance.bible_service.get_supported_translations()
+            current = kairos_instance.current_bible_translation
+
+            return JSONResponse({
+                "ok": True,
+                "translations": translations,
+                "current": current
+            })
+        else:
+            return JSONResponse({
+                "ok": False,
+                "error": "Bible service not available",
+                "translations": []
+            }, status_code=500)
+    except Exception as e:
+        log.error("Error getting translations: %s", e)
+        return JSONResponse({
+            "ok": False,
+            "error": str(e),
+            "translations": []
+        }, status_code=500)
+
+
+@app.post("/api/bible/next")
+async def next_bible_verse():
+    """Go to next Bible verse."""
+    global kairos_instance
+
+    if kairos_instance is None or kairos_instance.get_status() != "running":
+        return JSONResponse({
+            "ok": False,
+            "error": "System not running"
+        }, status_code=400)
+
+    try:
+        result = kairos_instance.next_bible_verse()
+
+        # Broadcast to WebSocket clients
+        if result.get("ok"):
+            await broadcast_message({
+                "type": "bible_verse",
+                "reference": result.get("reference"),
+                "text": result.get("text"),
+                "translation": result.get("translation")
+            })
+
+        return JSONResponse(result)
+    except Exception as e:
+        log.error("Error getting next verse: %s", e)
+        return JSONResponse({
+            "ok": False,
+            "error": str(e)
+        }, status_code=500)
+
+
+@app.post("/api/bible/previous")
+async def previous_bible_verse():
+    """Go to previous Bible verse."""
+    global kairos_instance
+
+    if kairos_instance is None or kairos_instance.get_status() != "running":
+        return JSONResponse({
+            "ok": False,
+            "error": "System not running"
+        }, status_code=400)
+
+    try:
+        result = kairos_instance.previous_bible_verse()
+
+        # Broadcast to WebSocket clients
+        if result.get("ok"):
+            await broadcast_message({
+                "type": "bible_verse",
+                "reference": result.get("reference"),
+                "text": result.get("text"),
+                "translation": result.get("translation")
+            })
+
+        return JSONResponse(result)
+    except Exception as e:
+        log.error("Error getting previous verse: %s", e)
+        return JSONResponse({
+            "ok": False,
+            "error": str(e)
+        }, status_code=500)
+
+
 # WebSocket endpoint
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):

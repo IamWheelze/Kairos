@@ -22,6 +22,10 @@ class OllamaProvider(NLPProvider):
         "stop_presentation",
         "list_presentations",
         "current_slide",
+        "show_bible_verse",
+        "set_bible_translation",
+        "next_verse",
+        "previous_verse",
     ]
 
     def __init__(self, config: Optional[Dict] = None):
@@ -54,11 +58,11 @@ class OllamaProvider(NLPProvider):
             return None
 
         try:
-            system_prompt = f"""You are an intent classifier for a presentation control system.
+            system_prompt = f"""You are an intent classifier for a presentation control system with Bible verse display.
 
 Analyze the user's command and respond with ONLY a JSON object containing:
 - "intent": one of {self.SUPPORTED_INTENTS}
-- "params": dictionary with any parameters (e.g., {{"slide_number": 5}})
+- "params": dictionary with any parameters
 
 If no intent matches, return: {{"intent": null, "params": {{}}}}
 
@@ -68,6 +72,12 @@ User: "next slide please"
 
 User: "go to slide 10"
 {{"intent": "set_slide", "params": {{"slide_number": 10}}}}
+
+User: "show john 3:16"
+{{"intent": "show_bible_verse", "params": {{"reference": "john 3:16"}}}}
+
+User: "switch to ESV"
+{{"intent": "set_bible_translation", "params": {{"translation": "ESV"}}}}
 
 Respond ONLY with the JSON object."""
 

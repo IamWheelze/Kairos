@@ -28,6 +28,10 @@ class OpenAIProvider(NLPProvider):
         "stop_presentation",
         "list_presentations",
         "current_slide",
+        "show_bible_verse",
+        "set_bible_translation",
+        "next_verse",
+        "previous_verse",
     ]
 
     def __init__(self, config: Optional[Dict] = None):
@@ -71,11 +75,11 @@ class OpenAIProvider(NLPProvider):
         try:
             client = openai.OpenAI(api_key=self.api_key)
 
-            system_prompt = f"""You are an intent classifier for a presentation control system.
+            system_prompt = f"""You are an intent classifier for a presentation control system with Bible verse display.
 
 Analyze the user's command and respond with a JSON object containing:
 - "intent": one of {self.SUPPORTED_INTENTS}
-- "params": dictionary with any parameters (e.g., {{"slide_number": 5}})
+- "params": dictionary with any parameters
 
 If no intent matches, return: {{"intent": null, "params": {{}}}}
 
@@ -85,6 +89,18 @@ Response: {{"intent": "next_slide", "params": {{}}}}
 
 User: "go to slide 10"
 Response: {{"intent": "set_slide", "params": {{"slide_number": 10}}}}
+
+User: "show john 3:16"
+Response: {{"intent": "show_bible_verse", "params": {{"reference": "john 3:16"}}}}
+
+User: "display genesis 1:1-3"
+Response: {{"intent": "show_bible_verse", "params": {{"reference": "genesis 1:1-3"}}}}
+
+User: "switch to ESV translation"
+Response: {{"intent": "set_bible_translation", "params": {{"translation": "ESV"}}}}
+
+User: "next verse"
+Response: {{"intent": "next_verse", "params": {{}}}}
 
 User: "what's the weather?"
 Response: {{"intent": null, "params": {{}}}}
