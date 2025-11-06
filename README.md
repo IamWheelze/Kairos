@@ -3,6 +3,8 @@
 ## Overview
 Kairos is a Voice-Activated Presentation System designed to facilitate seamless presentations through voice commands. This project integrates automatic speech recognition (ASR) and natural language processing (NLP) to interpret user commands and control presentation software effectively.
 
+**Status**: All functional requirements (FR1-FR12) are fully implemented with comprehensive test coverage. ✅
+
 ## Project Structure
 The project is organized into several key directories and modules:
 
@@ -26,14 +28,72 @@ cd Kairos
 pip install -r requirements.txt
 ```
 
+## Features
+
+### Complete Voice Pipeline ✅
+- **Audio Recording**: Capture microphone input with configurable parameters
+- **Speech Recognition**: Multiple ASR engines supported (Google, Sphinx, Whisper, etc.)
+- **Intent Recognition**: Natural language processing for presentation commands
+- **Presentation Control**: Control slides via network API or stub client
+
+### Supported Commands
+- "Next slide" / "Previous slide"
+- "Go to slide [number]"
+- "Start presentation" / "Stop presentation"
+- "List presentations"
+- "What's the current slide?"
+
+### ASR Engines
+- **Google Speech Recognition** (default, free tier)
+- **CMU Sphinx** (offline)
+- **Google Cloud Speech** (requires credentials)
+- **OpenAI Whisper** (requires whisper package)
+- **Wit.ai** (requires API key)
+
 ## Usage
+
+### Basic Usage
 To run the application, use the command line interface:
 
 ```bash
-python src/kairos/cli.py
+python src/kairos/cli.py --start
 ```
 
-Follow the prompts to interact with the Voice-Activated Presentation System.
+### Process Voice Commands
+
+#### From Audio File
+```python
+from kairos.core import Kairos
+
+kairos = Kairos()
+kairos.start()
+
+result = kairos.process_audio_file("path/to/audio.wav")
+print(result)  # {'ok': True, 'transcription': 'next slide', 'intent': 'next_slide', ...}
+```
+
+#### Interactive Recording
+```python
+from kairos.core import Kairos
+
+kairos = Kairos()
+kairos.start()
+
+# Record for 5 seconds and process
+result = kairos.process_voice_command_interactive(duration=5)
+print(result)
+```
+
+#### Text Commands
+```python
+from kairos.core import Kairos
+
+kairos = Kairos()
+kairos.start()
+
+result = kairos.process_command("go to slide 10")
+print(result)
+```
 
 ### Configuration
 - Default settings live in `configs/default.yaml`.
